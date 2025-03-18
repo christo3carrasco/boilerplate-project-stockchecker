@@ -1,9 +1,15 @@
 'use strict';
 
 const https = require('https');
+const crypto = require('crypto');
 
 // Base de datos en memoria para almacenar los "likes"
 const likesDB = {};
+
+// Función para anonimizar la IP usando SHA-256
+const anonymizeIP = (ip) => {
+  return crypto.createHash('sha256').update(ip).digest('hex');
+};
 
 // Función para obtener el precio de una acción
 const getStockPrice = (symbol, callback) => {
@@ -56,6 +62,9 @@ const getStockData = (symbols, like, ip, callback) => {
   const results = [];
   let completedRequests = 0;
 
+  // Anonimizar la IP
+  const hashedIP = anonymizeIP(ip);
+
   symbols.forEach((symbol) => {
     getStockPrice(symbol, (error, data) => {
       if (error) {
@@ -68,9 +77,9 @@ const getStockData = (symbols, like, ip, callback) => {
         }
 
         // Si like=true y el usuario no ha dado like antes, incrementar el conteo
-        if (like && !likesDB[symbol].users.has(ip)) {
+        if (like && !likesDB[symbol].users.has(hashedIP)) {
           likesDB[symbol].likes++;
-          likesDB[symbol].users.add(ip);
+          likesDB[symbol].users.add(hashedIP);
         }
 
         // Agregar el conteo de "likes" a los datos
